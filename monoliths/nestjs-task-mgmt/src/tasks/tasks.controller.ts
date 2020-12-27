@@ -4,17 +4,20 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
+import { UsePipes, ValidationPipe } from '@nestjs/common';
 
 import { TasksService } from './tasks.service';
-import { Task, TaskStatus } from './task.model';
-import { CreateTaskDto } from './dto/create-task.dto';
+
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
-import { ValidationPipe } from '@nestjs/common';
-import { UsePipes } from '@nestjs/common';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { TaskStatus } from './task-status.enum';
+import { Task } from './task.entity';
+
 import { TaskStatusValidationPipe } from './pipes/task-status-validation.pipe';
 
 @Controller('tasks')
@@ -22,11 +25,13 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @Get('/')
-  getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto): Task[] {
-    if (Object.keys(filterDto).length) {
-      return this.tasksService.getTasksWithFilter(filterDto);
-    }
-    return this.tasksService.getAllTasks();
+  getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto) {
+    return this.tasksService.getTasks(filterDto);
+  }
+
+  @Get('/:id')
+  getTaskById(@Param('id', ParseIntPipe) id: number): Promise<Task> {
+    return this.tasksService.getTaskById(id);
   }
 
   @Post('/')
@@ -35,21 +40,16 @@ export class TasksController {
     return this.tasksService.createTask(createTaskDto);
   }
 
-  @Get('/:id')
-  getTaskById(@Param('id') id: string): Task {
-    return this.tasksService.getTaskById(id);
-  }
-
   @Delete('/:id')
-  deleteTask(@Param('id') id: string): void {
+  deleteTask(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.tasksService.deleteTask(id);
   }
 
   @Patch('/:id/status')
   updateTaskStatus(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body('status', TaskStatusValidationPipe) status: TaskStatus,
-  ) {
+  ): Promise<Task> {
     return this.tasksService.updateTaskStatus(id, status);
   }
 }
